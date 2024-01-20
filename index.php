@@ -23,13 +23,26 @@
     </div>
     <!--Form to send message-->
     <div align="center" id="form_sendmessage" class="container">
-        <form action="controller/send.php" method="post">
+        <form action="controller/send.php" method="post" autocomplete="off">
             <table>
                 <tr>
-                    <td>To:</td><td><input type="tel" name="to" id="to" pattern="+[0-9]{3}[0-9]{4}[0-9]{4}" placeholder="+50312341234" required></td>
+                    <td>To:</td>
+                    <td>
+                        <select name="country-code" id="country-code">
+                        <?php
+                        $file = fopen("resources/country-codes.csv","r");
+                        while(! feof($file)) {
+                            $line = fgets($file);
+                            $line_exploded = explode(",",$line);
+                            echo '<option value="'.$line_exploded[1].'">'.$line_exploded[0].' - '.$line_exploded[1].'</option>';
+                        }
+                        fclose($file);
+                        ?>
+                        </select>
+                        <input size="27" type="tel" name="to" id="to" pattern="[0-9]{4}[0-9]{4}" placeholder="12341234" required></td>
                 </tr>
                 <tr>
-                    <td>Message:</td><td><textarea name="message" id="message" cols="30" rows="10" required maxlength="250"></textarea></td>
+                    <td>Message:</td><td><textarea name="message" id="message" cols="47" rows="10" required maxlength="250"></textarea></td>
                 </tr>
                 <tr>
                     <td colspan="2" align="center"><button type="submit" class="btn btn-success">Send Message</button></td>
@@ -48,6 +61,7 @@
                     <th>Created</th>
                     <th>To</th>
                     <th>Message</th>
+                    <th>Twilio Confirmation Message</th>
                 </tr>
             </thead>
             <tbody>
@@ -56,16 +70,22 @@
                     $result = sqlsrv_query($conn, $sqlselect);
                     while($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
                         echo '<tr>';
+                            //Datetime fields retrieves an object, we need to format the output.
                             echo '<td>'.$row['created']->format('Y-m-d H:i:s').'</td>';
                             echo '<td>'.$row['to'].'</td>';
                             echo '<td>'.$row['message'].'</td>';
+                            $sqlselect_sent = "SELECT twilio_confirmation FROM dbo.sent WHERE message_id =".$row['id'];
+                            $result_sent = sqlsrv_query($conn, $sqlselect_sent);
+                            while($row2 = sqlsrv_fetch_array($result_sent,SQLSRV_FETCH_ASSOC)){
+                                echo '<td>'.$row2['twilio_confirmation'].'</td>';
+                            }
                         echo '<tr>';
                     }
                 ?>
             </tbody>
         </table>
     </div>
-    <!--Script for order asc or desc the messages table-->
+    <!--JQuery script for order asc or desc the messages on the able-->
     <script>
         $('th').click(function(){
         var table = $(this).parents('table').eq(0)
